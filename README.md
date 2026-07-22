@@ -246,11 +246,72 @@ python compare.py        # results table
 
 | 1 | `mbp-1` | Spread and top-of-book comparison ✅ |
 
-| 2 | `mbp-10` | Depth — how much size sits behind the quote |
+| 2 | `mbp-10` | Depth — how much size sits behind the quote ✅ |
 
 | 3 | `mbo` | Order-by-order — book reconstruction, queue position |
 
 
 
 Same three instruments each pass. Only the resolution changes.
+
+
+---
+
+# Pass 2 — MBP-10 (depth)
+
+Same three instruments, same window, ten levels of book instead of one.
+
+## Cost scales sub-linearly with depth
+
+| Instrument | MBP-1 | MBP-10 | Increase |
+|---|---:|---:|---:|
+| NG | $0.0259 | $0.0470 | 1.8× |
+| NVDA | $0.0091 | $0.0223 | 2.5× |
+| SERV | $0.0001 | $0.0002 | ~2× |
+
+Ten times the price levels cost roughly twice as much, not ten times. Depth
+compresses well because levels behind the touch update far less often than the
+touch itself.
+
+## Depth resting on the bid (median notional)
+
+| Instrument | Level 1 | Level 5 | Level 10 | 10-level total |
+|---|---:|---:|---:|---:|
+| NG Aug26 | $311,300 | $397,040 | $649,290 | $4,553,750 |
+| NVDA | $15,453 | $30,333 | $23,530 | $249,314 |
+| SERV | $3,876 | $8,458 | $2,921 | $65,814 |
+
+SERV shows **$3,876 at the touch but $65,814 across ten levels** — roughly 17×
+more liquidity behind the quote than top-of-book implied. "Thin at the touch"
+did not mean "thin overall," and MBP-1 could not have shown the difference.
+
+Note the books are not smooth pyramids: NG's level 10 is larger than its level
+5, and NVDA's level 10 is smaller than its level 5. Resting size clusters
+unevenly at round prices — a real property of order books, not a data error.
+
+## Cost of a $100,000 market order
+
+Simulated by walking the ask side level by level from a mid-window snapshot.
+
+| Instrument | Best ask | Avg fill | Slippage | Filled |
+|---|---:|---:|---:|---:|
+| NG Aug26 | $2.83 | $2.83 | 0.53 bps | 100% |
+| NVDA | $206.41 | $206.42 | 0.61 bps | 100% |
+| SERV | $5.50 | $5.54 | 67.03 bps | 60% |
+
+The same $100k order is invisible on NG and NVDA (under 1 bp, fully filled) but
+moves SERV **67 bps and still only fills 60%** — ten levels of book cannot
+absorb it. This is the cost of illiquidity, measured directly.
+
+The three passes form one argument: the touch says SERV looks thin ($3,876),
+depth says there is more behind it ($65,814), and the slippage walk says it is
+still not enough to fill $100k without moving 67 bps. Each layer corrects the
+previous layer's incomplete picture — which is the case for paying for deeper
+data rather than inferring liquidity from the top of book.
+
+**Limitation:** the slippage walk uses a single snapshot and assumes the book
+is static during execution. Real books replenish as orders fill, so the 60%
+fill is a worst-case estimate, not a guarantee.
+
+
 
