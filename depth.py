@@ -14,7 +14,6 @@ def depth(df, name):
     row = {"instrument": name}
     total = 0
     for lvl in range(10):
-        sz = df[f"bid_sz_0{lvl}"] if lvl < 10 else None
         px = df[f"bid_px_0{lvl}"]
         sz = df[f"bid_sz_0{lvl}"]
         notional = (sz * px * m)
